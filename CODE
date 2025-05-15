@@ -1,0 +1,68 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from tqdm import tqdm
+
+# Simulation parameters
+N = 41
+L = 1.0
+dx = L / (N - 1)
+dt = 0.001
+nu = 0.1
+rho = 1.0
+u_top = 1.0
+n_steps = 500
+n_pressure_iter = 50
+
+# Grid
+x = np.linspace(0, L, N)
+y = np.linspace(0, L, N)
+X, Y = np.meshgrid(x, y)
+
+# Fields
+u = np.zeros((N, N))
+v = np.zeros((N, N))
+p = np.zeros((N, N))
+
+# Differentiation
+def ddx(f):
+    return (f[:, 2:] - f[:, :-2]) / (2 * dx)
+
+def ddy(f):
+    return (f[2:, :] - f[:-2, :]) / (2 * dx)
+
+def central_diff_x(f):
+    df = np.zeros_like(f)
+    df[1:-1, 1:-1] = ddx(f[1:-1, :])
+    return df
+
+def central_diff_y(f):
+    df = np.zeros_like(f)
+    df[1:-1, 1:-1] = ddy(f[:, 1:-1])
+    return df
+
+def laplacian(f):
+    lap = np.zeros_like(f)
+    lap[1:-1, 1:-1] = (
+        f[1:-1, :-2] + f[1:-1, 2:] +
+        f[:-2, 1:-1] + f[2:, 1:-1] -
+        4 * f[1:-1, 1:-1]
+    ) / dx**2
+    return lap
+
+def apply_velocity_bc(u, v):
+    u[0, :] = u[:, 0] = u[:, -1] = 0
+    u[-1, :] = u_top
+    v[0, :] = v[:, 0] = v[:, -1] = v[-1, :] = 0
+
+def apply_pressure_bc(p):
+    p[:, -1] = p[:, -2]
+    p[:, 0] = p[:, 1]
+    p[0, :] = p[1, :]
+    p[-1, :] = 0
+
+def compute_rhs(u_star, v_star):
+    return rho / dt * (central_diff_x(u_star) + central_diff_y(v_star))
+
+def solve_pressure_poisson(p, rhs):
+    for _ in range(n_pressure_iter_
